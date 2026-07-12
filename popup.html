@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yad2 Pure Status</title>
+  <style>
+    /* Premium dark theme variables */
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-emerald: #10b981;
+      --accent-emerald-glow: rgba(16, 185, 129, 0.15);
+      --accent-rose: #f43f5e;
+      --accent-rose-glow: rgba(244, 63, 94, 0.15);
+      --btn-primary: #3b82f6;
+      --btn-primary-hover: #2563eb;
+      --btn-secondary: #475569;
+      --btn-secondary-hover: #334155;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      width: 340px;
+      height: 460px;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 16px;
+      background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 60%);
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 14px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .logo-emoji {
+      font-size: 18px;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background-color: var(--accent-emerald-glow);
+      padding: 3px 8px;
+      border-radius: 100px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--accent-emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--accent-emerald);
+      animation: pulse 1.8s infinite ease-in-out;
+    }
+
+    .status-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-emerald);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Stats Banner */
+    .stats-banner {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .stats-title {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .stats-num {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-main);
+      text-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+    }
+
+    /* Logs Section */
+    .logs-wrapper {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      margin-bottom: 14px;
+    }
+
+    .logs-header {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    #error-status {
+      flex-grow: 1;
+      background-color: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 10px;
+    }
+
+    /* Scrollbar */
+    #error-status::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    #error-status::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #error-status::-webkit-scrollbar-thumb {
+      background: var(--btn-secondary);
+      border-radius: 3px;
+    }
+
+    #error-status::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    .empty-state {
+      color: var(--text-muted);
+      text-align: center;
+      font-style: italic;
+      padding: 30px 10px;
+      font-family: inherit;
+      font-size: 11px;
+    }
+
+    /* Log Item */
+    .log-item {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 6px 0;
+    }
+
+    .log-item:last-child {
+      border-bottom: none;
+    }
+
+    .log-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 8px;
+      margin-bottom: 2px;
+    }
+
+    .log-context {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 3px;
+      border-radius: 2px;
+      font-weight: bold;
+    }
+
+    .log-msg {
+      color: var(--accent-rose);
+      font-weight: 500;
+      word-break: break-all;
+    }
+
+    .log-stack-toggle {
+      color: var(--btn-primary);
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 3px;
+      display: inline-block;
+      font-size: 9px;
+    }
+
+    .log-stack {
+      display: none;
+      color: var(--text-muted);
+      font-size: 8px;
+      white-space: pre-wrap;
+      margin-top: 4px;
+      max-height: 50px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 4px;
+      border-radius: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    /* Footer Action */
+    footer {
+      display: flex;
+      border-top: 1px solid var(--border-color);
+      padding-top: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+      color: var(--text-main);
+      background-color: var(--btn-secondary);
+    }
+
+    .btn:hover {
+      background-color: var(--btn-secondary-hover);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+      }
+      70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span class="logo-emoji">🛡️</span>
+        <h1>Yad2 Pure Status</h1>
+      </div>
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span class="status-label">Active</span>
+      </div>
+    </header>
+
+    <section class="stats-banner">
+      <span class="stats-title">Ads Blocked</span>
+      <span class="stats-num" id="blocked-count">0</span>
+    </section>
+
+    <section class="logs-wrapper">
+      <h2 class="logs-header">Captured Bugs</h2>
+      <div id="error-status">
+        <div class="empty-state">No errors reported. Everything running smoothly!</div>
+      </div>
+    </section>
+
+    <footer>
+      <button id="clear-error-btn" class="btn" title="Clear statistics and error log">
+        Clear Error Log
+      </button>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Yad2 No Ads",
+  "version": "1.0.0",
+  "description": "Hide commercial listings on the Yad2 website.",
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.yad2.co.il/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.yad2.co.il/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Yad2 No Ads Status",
+    "default_popup": "popup.html"
+  }
+}
