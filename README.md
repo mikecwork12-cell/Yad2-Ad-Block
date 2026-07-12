@@ -1,4 +1,4 @@
-# Pure Feed for Israeli Boards (Unofficial Extension)
+# Pure Feed for Yad2.co.il (Unofficial Extension)
 
 An ultra-lightweight, 100% client-side Chrome Extension that cleans up dynamic feed boards by filtering out commercial, agency, and promotional listings. It runs completely offline with zero data collection.
 
