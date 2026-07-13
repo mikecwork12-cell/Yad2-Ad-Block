@@ -10,6 +10,14 @@
   }
 
   // --- Error Reporting & Storage Logging ---
+  
+  /**
+   * Helper to check if the extension context is still alive
+   */
+  function isContextValid() {
+    return typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id && !!chrome.storage;
+  }
+
   /**
    * Safe wrapper to log errors to chrome.storage.local
    * @param {Error} error
@@ -17,28 +25,34 @@
    */
   function reportError(error, context) {
     try {
+      // If the context is dead because of an update/reload, fail silently
+      if (!isContextValid()) return;
+
       console.error(`[Yad2 Pure Error] Context: ${context}`, error);
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get({ errorLogs: [] }, (result) => {
-          try {
-            const errorLogs = result.errorLogs || [];
-            const newLog = {
-              message: error ? error.message : 'Unknown Error',
-              stack: error ? error.stack : 'No stack trace available',
-              timestamp: new Date().toISOString(),
-              context: context
-            };
-            errorLogs.unshift(newLog); // Add to beginning
-            if (errorLogs.length > 50) {
-              errorLogs.pop(); // Keep only last 50
-            }
-            chrome.storage.local.set({ errorLogs: errorLogs });
-          } catch (innerErr) {
-            console.error('[Yad2 Pure] Inner failure writing error log:', innerErr);
+      
+      chrome.storage.local.get({ errorLogs: [] }, (result) => {
+        try {
+          if (!isContextValid()) return; // Double-check inside async callback
+          
+          const errorLogs = result.errorLogs || [];
+          const newLog = {
+            message: error ? error.message : 'Unknown Error',
+            stack: error ? error.stack : 'No stack trace available',
+            timestamp: new Date().toISOString(),
+            context: context
+          };
+          errorLogs.unshift(newLog);
+          if (errorLogs.length > 50) {
+            errorLogs.pop();
           }
-        });
-      }
+          chrome.storage.local.set({ errorLogs: errorLogs });
+        } catch (innerErr) {
+          if (innerErr.message?.includes('context invalidated')) return;
+          console.error('[Yad2 Pure] Inner failure writing error log:', innerErr);
+        }
+      });
     } catch (storageErr) {
+      if (storageErr.message?.includes('context invalidated')) return;
       console.error('[Yad2 Pure] Global failure writing error log to storage:', storageErr);
     }
   }
@@ -48,16 +62,18 @@
    */
   function incrementBlockedCount() {
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get({ blockedCount: 0 }, (result) => {
-          try {
-            const newCount = (result.blockedCount || 0) + 1;
-            chrome.storage.local.set({ blockedCount: newCount });
-          } catch (innerErr) {
-            reportError(innerErr, 'incrementBlockedCount_set');
-          }
-        });
-      }
+      if (!isContextValid()) return;
+
+      chrome.storage.local.get({ blockedCount: 0 }, (result) => {
+        try {
+          if (!isContextValid()) return;
+          
+          const newCount = (result.blockedCount || 0) + 1;
+          chrome.storage.local.set({ blockedCount: newCount });
+        } catch (innerErr) {
+          reportError(innerErr, 'incrementBlockedCount_set');
+        }
+      });
     } catch (err) {
       reportError(err, 'incrementBlockedCount_get');
     }
