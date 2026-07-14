@@ -178,25 +178,82 @@
               return; 
             }
 
-            // STRICT FEED RULE: Must explicitly declare itself as private
-            const isPrivate = 
+            // --- Bulletproof Header Exemption Guard ---
+            const isHeaderElement = 
+              card.closest('header') ||
+              card.closest('[data-testid="responsive-header-grid"]') ||
+              card.closest('[class*="responsive-header-grid"]') ||
+              card.closest('[class*="common-header"]') ||
+              card.closest('[class*="header_"]');
+
+            if (isHeaderElement) {
+              card.setAttribute(CHECKED_ATTR, 'header-safe');
+              card.style.removeProperty('display'); // Force keep it visible
+              return; 
+            }
+
+            // --- STRICT FEED FILTER RULE (Hybrid Classification) ---
+            // 1. Whitelist Check: Is it explicitly marked private?
+            const isExplicitPrivate = 
               listingType.startsWith('private') || 
               nagishAttr === 'private-item-link' || 
               className.includes('private-item_box');
 
-            if (!isPrivate) {
-              // If it's ultra, agent, sponsored, or anything else -> Hide it
+            // 2. Blacklist Check: Does it have commercial/agency signatures?
+            const testIdLower = testId.toLowerCase();
+            const nagishLower = nagishAttr.toLowerCase();
+            
+            // Check if card has an agency header
+            const abovePriceEl = card.querySelector('[data-testid="ad-card-above-price"]');
+            const hasAgencyHeader = abovePriceEl && abovePriceEl.textContent && abovePriceEl.textContent.trim() !== '';
+
+            // Check Hebrew keywords
+            const KEYWORDS = ['סוכנות', 'תיווך', 'טרייד אין'];
+            let hasCommercialKeyword = false;
+            const textContentLower = textContent.toLowerCase();
+            for (const keyword of KEYWORDS) {
+              if (textContentLower.includes(keyword)) {
+                hasCommercialKeyword = true;
+                break;
+              }
+            }
+
+            const isCommercial = 
+              // Explicit commercial listing types (e.g. 'agency', 'sponsored', 'ultra')
+              (listingType !== '' && !listingType.startsWith('private')) ||
+              // Promoted test-ids (e.g. 'platinum-item', 'yad1-boost-item', 'boosted')
+              testIdLower.includes('platinum') ||
+              testIdLower.includes('boost') ||
+              testIdLower.includes('sponsored') ||
+              testIdLower.includes('developer') ||
+              testIdLower.includes('promotion') ||
+              testIdLower.includes('yad1') ||
+              // Nagish promo indicators
+              nagishLower.includes('platinum') ||
+              nagishLower.includes('boost') ||
+              // Agency header text presence
+              hasAgencyHeader ||
+              // Keywords check
+              hasCommercialKeyword;
+
+            // Decision:
+            // - If explicitly private: Clean.
+            // - If commercial and not explicitly private: Hide it.
+            // - Fallback (neither): Clean.
+            const shouldHide = !isExplicitPrivate && isCommercial;
+
+            if (shouldHide) {
               card.setAttribute(CHECKED_ATTR, 'hidden');
               card.style.setProperty('display', 'none', 'important');
               
               if (DEBUG) {
-                console.log(`[Yad2 Pure] Hiding Non-Private Card (Type: ${listingType || 'Unknown'}):`, card);
+                console.log(`[Yad2 Pure] Hiding Commercial Component (Type: ${listingType || 'Unknown'}, TestId: ${testId}):`, card);
               }
 
               // Increment stats count in background storage
               incrementBlockedCount();
             } else {
-              // Keep pristine private listings visible
+              // Keep pristine private listings or unclassified safe items visible
               card.setAttribute(CHECKED_ATTR, 'clean');
               card.style.removeProperty('display');
             }
@@ -218,8 +275,10 @@
           const target = mutation.target;
           if (target && target.nodeType === Node.ELEMENT_NODE) {
             const card = target.closest(`[${CHECKED_ATTR}]`);
-            if (card && card.getAttribute(CHECKED_ATTR) !== 'pagination-safe') {
-              // Force React updates or recycled nodes to be re-evaluated (skip pagination tags)
+            if (card && 
+                card.getAttribute(CHECKED_ATTR) !== 'pagination-safe' && 
+                card.getAttribute(CHECKED_ATTR) !== 'header-safe') {
+              // Force React updates or recycled nodes to be re-evaluated (skip pagination and header tags)
               card.removeAttribute(CHECKED_ATTR);
             }
           }
